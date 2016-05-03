@@ -27,6 +27,7 @@
 
 #import "HPGrowingTextView.h"
 #import "HPTextViewInternal.h"
+#import <QuartzCore/QuartzCore.h>
 
 @interface HPGrowingTextView(private)
 -(void)commonInitialiser;
@@ -211,6 +212,23 @@
     [internalTextView setPlaceholderColor:placeholderColor];
 }
 
+- (BOOL)isAnimating
+{
+    return (self.layer.animationKeys.count > 0);
+}
+
+- (void)refreshPlaceholder
+{
+    // Display (or not) the placeholder string
+    
+    BOOL wasDisplayingPlaceholder = internalTextView.displayPlaceHolder;
+    internalTextView.displayPlaceHolder = self.internalTextView.text.length == 0 && !self.isAnimating;
+	
+    if (wasDisplayingPlaceholder != internalTextView.displayPlaceHolder) {
+        [internalTextView setNeedsDisplay];
+    }
+}
+
 - (void)textViewDidChange:(UITextView *)textView
 {	
 	//size of content, so we can set the frame of self
@@ -245,6 +263,7 @@
                                          if ([delegate respondsToSelector:@selector(growingTextView:didChangeHeight:)]) {
                                              [delegate growingTextView:self didChangeHeight:newSizeH];
                                          }
+                                         [self refreshPlaceholder];
                                      }];
 #endif
                 } else {
@@ -285,13 +304,7 @@
 	}
 	
     // Display (or not) the placeholder string
-    
-    BOOL wasDisplayingPlaceholder = internalTextView.displayPlaceHolder;
-    internalTextView.displayPlaceHolder = self.internalTextView.text.length == 0;
-	
-    if (wasDisplayingPlaceholder != internalTextView.displayPlaceHolder) {
-        [internalTextView setNeedsDisplay];
-    }
+    [self refreshPlaceholder];
     
     // Tell the delegate that the text view changed
 	
@@ -323,7 +336,8 @@
 	if ([delegate respondsToSelector:@selector(growingTextView:didChangeHeight:)]) {
 		[delegate growingTextView:self didChangeHeight:self.frame.size.height];
 	}
-	
+    
+    [self refreshPlaceholder];
 }
 
 -(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
